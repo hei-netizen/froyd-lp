@@ -120,12 +120,15 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 .offer-note span{color:rgba(255,255,255,.85);font-weight:500}
 @media(max-width:480px){.offer{gap:9px}.offer .tile img,.offer .tile .big{height:84px}.offer .tile .big{font-size:1.8rem}.offer .plus{width:28px;height:28px;font-size:1.05rem}}
 
-/* hero form card (GHL-embed inni) */
-.formcard{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:20px 14px 10px;box-shadow:var(--sh)}
-.formcard .fhead{padding:0 8px}
-.formcard .fhead b{display:block;font-size:1.14rem;font-weight:800;letter-spacing:-0.01em}
-.formcard .fhead span{display:block;font-size:0.84rem;color:var(--muted);margin:5px 0 6px}
-.formcard iframe{width:100%;border:none;min-height:440px;display:block}
+/* hero form (GHL-embed — widgetens EGET hvite kort er skjemaet; iframe-bakgrunnen
+   er transparent, så widgetens interne marger er usynlige mot hero-bildet.
+   IKKE legg hvitt kort rundt: da blir margene til synlig dødrom (Victors
+   feedback 17.08.2026). */
+.formcard{background:transparent;border:0;padding:0}
+.formcard .fhead{padding:0 6px;text-align:left}
+.formcard .fhead b{display:block;font-size:1.3rem;font-weight:800;letter-spacing:-0.01em;color:#fff;text-shadow:0 2px 14px rgba(18,14,12,.55)}
+.formcard .fhead span{display:block;font-size:0.9rem;color:rgba(255,255,255,.88);margin:6px 0 0;text-shadow:0 1px 10px rgba(18,14,12,.6);max-width:46ch}
+.formcard iframe{width:100%;border:none;min-height:440px;display:block;margin-top:-22px}
 @media(max-width:900px){
   .hero{padding:26px 0 46px}
   .hero-grid{grid-template-columns:1fr;gap:30px}
@@ -181,7 +184,10 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 /* ---- included card ---- */
 .inc-card{background:var(--white);border:1px solid var(--line);border-radius:24px;display:grid;grid-template-columns:1.1fr 1fr;gap:0;overflow:hidden;box-shadow:var(--sh)}
 .inc-card .body{padding:42px 40px}
-.inc-card .pic img{width:100%;height:100%;min-height:440px;object-fit:cover}
+/* .pic er absolutt-fylt: tekstkolonnen styrer korthøyden — ellers strekker
+   portrettbildets egenhøyde kortet til et digert tomrom på brede skjermer */
+.inc-card .pic{position:relative;min-height:440px}
+.inc-card .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
 .inc-list{list-style:none;display:grid;gap:14px;margin:22px 0 26px}
 .inc-list li{display:flex;gap:13px;align-items:flex-start;font-size:1rem}
 .inc-list .chk{margin-top:1px}
@@ -190,7 +196,7 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 .pricebar .ord s{color:var(--red)}
 .pricebar .now{font-size:1.55rem;font-weight:800;color:var(--clay-deep);letter-spacing:-0.02em}
 .pricebar .now small{font-size:0.86rem;font-weight:600;color:var(--muted);letter-spacing:0}
-@media(max-width:880px){.inc-card{grid-template-columns:1fr}.inc-card .pic{order:-1}.inc-card .pic img{min-height:280px}.inc-card .body{padding:34px 26px}}
+@media(max-width:880px){.inc-card{grid-template-columns:1fr}.inc-card .pic{order:-1;min-height:280px}.inc-card .body{padding:34px 26px}}
 
 /* ---- reviews ---- */
 .rev-head{display:flex;align-items:center;gap:30px;flex-wrap:wrap;justify-content:center;text-align:center;flex-direction:column}
