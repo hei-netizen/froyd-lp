@@ -611,23 +611,25 @@ if(overlay){
 
 /* ===== Lead-event ved submit i GHL-iframen =====
    GHL-skjemaet lever i iframen og viser inline-takk der (ingen redirect).
-   Vi lytter på postMessage fra widgeten og fyrer fbq Lead ÉN gang når et
-   submit-signal dukker opp. Signalene er verifisert empirisk (se EDIT-LOG i
-   docs/froyd-lp-2026-08.md); ukjente meldinger ignoreres stille. */
+   Verifisert empirisk 17.08.2026 (CDP-test, se docs/froyd-lp-2026-08.md):
+   ved vellykket submit poster widgeten ['set-sticky-contacts','_ud','{...
+   customer_id...}'] til parent — det er submit-signalet. fbq Lead fyres ÉN
+   gang per nettleser (localStorage-guard; tilbudet gjelder én gang per kunde). */
 (function(){
   var fired=false;
-  function fireLead(src){
+  try{fired=!!localStorage.getItem('froyd_lead_fired');}catch(e){}
+  function fireLead(){
     if(fired)return; fired=true;
-    try{sessionStorage.setItem('froyd_lead_done','1');}catch(e){}
+    try{localStorage.setItem('froyd_lead_fired','1');sessionStorage.setItem('froyd_lead_done','1');}catch(e){}
     if(window.fbq)fbq('track','Lead');
   }
   window.addEventListener('message',function(ev){
     if(typeof ev.origin==='string' && ev.origin.indexOf('leadconnectorhq.com')===-1 && ev.origin.indexOf('msgsndr.com')===-1)return;
     var d=ev.data;
     try{
-      var s = typeof d==='string' ? d : JSON.stringify(d);
-      if(/submit|thank|success/i.test(s) && !/fetch-|sticky|query-params|iframeLoaded/i.test(s)){
-        fireLead(s.slice(0,80));
+      if(Array.isArray(d) && d[0]==='set-sticky-contacts'){
+        var payload=JSON.stringify(d.slice(1));
+        if(/customer_id|"id"/.test(payload)) fireLead();
       }
     }catch(e){}
   });
