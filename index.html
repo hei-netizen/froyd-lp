@@ -17,13 +17,14 @@
      · Copy/claims VERBATIM fra froyd.klinikkflow.no (priser, inkludert-liste,
        anmeldelser, FAQ, adresse). Ingen %-rabatt-claim (sidens «47%» stemmer
        ikke med 3900→1990; vi bruker kronebeløp i stedet).
-     · SKJEMA = GoHighLevel-embed (widget/form/dRFvJfkzlZIkI5yre4ib).
-       IKKE erstatt med eget skjema: GHL-skjemaet bærer Cloudflare Turnstile,
-       sticky contacts og trigger GHL-workflow → Make 6251643 → «Frøyd x Arcads»-
-       sheet. Egen POST til forms/submit ryker på Turnstile → stille lead-tap.
-       form_embed.js videresender også fbclid/utm fra parent-URL inn i iframen.
+     · SKJEMA = NATIVT (GF-stil, Victors beslutning 17.08) → POST direkte til
+       Make-hook 3259732 «Frøyd LP leads» → scenario 6251643 → «Frøyd x Arcads»-
+       sheet, samme rad-format som før. NB: GHL-CRM-leggen (KlinikkFlow-kontakt)
+       er koblet UT — GHL forms/submit krever Cloudflare Turnstile-token som
+       ikke lar seg utstede utenfor GHL (verifisert 17.08: 429 uten/med token).
+       Trenger klinikken GHL-innboksen: be Jona om Inbound Webhook i GHL.
      · Meta-pixel 1332588077692694 (samme som funnel-siden): PageView her,
-       Lead fyres ved submit-signal fra iframen (postMessage-lytter nederst).
+       Lead fyres på takkesiden (takk.html) etter submit-redirect.
      · Popup uten eget skjema — kun «Gå til skjemaet» (VR/GF-beslutningen;
        to skjemaer var årsaken til dup-leads i GHL, jf. dup-diagnose aug 2026).
      ============================================================ -->
@@ -99,7 +100,12 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 .hero::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,rgba(18,14,12,.94) 0%,rgba(18,14,12,.88) 34%,rgba(18,14,12,.62) 60%,rgba(18,14,12,.38) 82%,rgba(18,14,12,.28) 100%);pointer-events:none}
 .hero .wrap{position:relative;z-index:1}
 .hero h1{color:#fff;text-shadow:0 2px 16px rgba(18,14,12,.5)}
-.hero-grid{display:grid;grid-template-columns:1.04fr 0.96fr;gap:40px;align-items:start}
+/* grid-areas: på mobil skal skjemaet ligge RETT under H1 (above the fold —
+   Victors krav 17.08.2026); checkliste + tilbuds-tiles flyttes under skjemaet */
+.hero-grid{display:grid;grid-template-columns:1.04fr 0.96fr;grid-template-areas:"head form" "rest form";gap:0 40px;align-items:start}
+.hero-head{grid-area:head}
+.hero-form{grid-area:form}
+.hero-rest{grid-area:rest}
 .hero h1{margin:4px 0 18px}
 .hero .blist{list-style:none;display:grid;gap:11px;margin:0 0 22px}
 .hero .blist li{display:flex;align-items:center;gap:11px;font-size:1.0rem;font-weight:600;color:#fff;text-shadow:0 1px 10px rgba(18,14,12,.6)}
@@ -120,19 +126,27 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 .offer-note span{color:rgba(255,255,255,.85);font-weight:500}
 @media(max-width:480px){.offer{gap:9px}.offer .tile img,.offer .tile .big{height:84px}.offer .tile .big{font-size:1.8rem}.offer .plus{width:28px;height:28px;font-size:1.05rem}}
 
-/* hero form (GHL-embed — widgetens EGET hvite kort er skjemaet; iframe-bakgrunnen
-   er transparent, så widgetens interne marger er usynlige mot hero-bildet.
-   IKKE legg hvitt kort rundt: da blir margene til synlig dødrom (Victors
-   feedback 17.08.2026). */
-.formcard{background:transparent;border:0;padding:0}
-.formcard .fhead{padding:0 6px;text-align:left}
-.formcard .fhead b{display:block;font-size:1.3rem;font-weight:800;letter-spacing:-0.01em;color:#fff;text-shadow:0 2px 14px rgba(18,14,12,.55)}
-.formcard .fhead span{display:block;font-size:0.9rem;color:rgba(255,255,255,.88);margin:6px 0 0;text-shadow:0 1px 10px rgba(18,14,12,.6);max-width:46ch}
-.formcard iframe{width:100%;border:none;min-height:440px;display:block;margin-top:-22px}
+/* hero form card — GF-malens native skjema (Victors beslutning 17.08.2026:
+   GHL-embedden så rotete ut; native felter + stram spacing som Generalfinans) */
+.formcard{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:22px 20px 18px;box-shadow:var(--sh)}
+.formcard .fhead b{display:block;font-size:1.14rem;font-weight:800;letter-spacing:-0.01em}
+.formcard .fhead span{display:block;font-size:0.82rem;color:var(--muted);margin:5px 0 14px}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:4px}
+.field label .req{color:var(--clay-deep)}
+.field .inp{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;background:var(--sand);overflow:hidden}
+.field .inp:focus-within{border-color:var(--clay);background:#fff}
+.field .flag{padding:0 10px;font-size:1.05rem;border-right:1px solid var(--line);align-self:stretch;display:flex;align-items:center}
+.field input{flex:1;width:100%;padding:11px 13px;border:0;background:transparent;font-family:var(--mont);font-size:0.95rem;color:var(--ink)}
+.field input:focus{outline:none}
+.formcard .cta{width:100%;margin-top:6px;padding:14px 32px}
+.fmsg{display:none;background:var(--clay-tint);border:1px solid var(--clay-soft);color:#7A4433;padding:13px 15px;border-radius:12px;font-size:0.9rem;margin-bottom:14px;font-weight:600}
+.formcard .fine{display:block;font-size:0.74rem;color:var(--muted);margin-top:11px;text-align:center}
 @media(max-width:900px){
-  .hero{padding:26px 0 46px}
-  .hero-grid{grid-template-columns:1fr;gap:30px}
-  .hero-copy{order:1}.hero-form{order:2}
+  .hero{padding:22px 0 42px}
+  .hero-grid{grid-template-columns:1fr;grid-template-areas:"head" "form" "rest";gap:0}
+  .hero-head h1{margin-bottom:14px}
+  .hero-form{margin-bottom:24px}
 }
 @media(max-width:480px){
   .h-xl{font-size:1.75rem}
@@ -273,8 +287,10 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
 <section class="hero">
   <div class="wrap">
     <div class="hero-grid">
-      <div class="hero-copy">
+      <div class="hero-head">
         <h1 class="h-xl">Vil du ha silkeglatt, strammere hud uten kirurgi?</h1>
+      </div>
+      <div class="hero-rest">
         <ul class="blist">
           <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Gir gl&oslash;d, fukt og fastere hud</li>
           <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Perfekt for t&oslash;rr og gr&aring; vinterhud</li>
@@ -297,27 +313,31 @@ h1,h2,h3,h4{font-family:var(--mont);font-weight:800;line-height:1.08;letter-spac
         <p class="offer-note">Spar 1&nbsp;910 kr p&aring; f&oslash;rste bes&oslash;k &mdash; <span>tilbudet gjelder &eacute;n gang per kunde</span></p>
       </div>
 
-      <!-- LEAD FORM = GoHighLevel-embed. IKKE bytt til eget skjema — se kommentar i <head>. -->
+      <!-- LEAD FORM (native, GF-stil) → Make-hook 3259732 «Frøyd LP leads» (samme
+           sluk som GHL-workflowen postet til) → sheet «Frøyd x Arcads». Se docs. -->
       <div class="hero-form">
         <div class="formcard">
           <div class="fhead">
             <b>Sikre deg kampanjeprisen</b>
             <span>Fyll ut &mdash; s&aring; tar vi kontakt og finner en time som passer deg. Tar 30 sekunder.</span>
           </div>
-          <iframe
-            src="https://api.leadconnectorhq.com/widget/form/dRFvJfkzlZIkI5yre4ib"
-            id="inline-dRFvJfkzlZIkI5yre4ib"
-            data-layout="{'id':'INLINE'}"
-            data-trigger-type="alwaysShow"
-            data-trigger-value=""
-            data-activation-type="alwaysActivated"
-            data-activation-value=""
-            data-deactivation-type="neverDeactivate"
-            data-deactivation-value=""
-            data-form-name="Fr&oslash;yd kampanje"
-            data-layout-iframe-id="inline-dRFvJfkzlZIkI5yre4ib"
-            data-form-id="dRFvJfkzlZIkI5yre4ib"
-            title="Fr&oslash;yd kampanje"></iframe>
+          <div class="fmsg" id="formMsg">Takk! Vi har mottatt foresp&oslash;rselen din, og tar kontakt for &aring; avtale time.</div>
+          <form id="leadForm" novalidate>
+            <div class="field">
+              <label for="fr-navn">Fornavn og etternavn <span class="req">*</span></label>
+              <div class="inp"><input type="text" id="fr-navn" name="full_name" placeholder="Ditt navn" autocomplete="name" required></div>
+            </div>
+            <div class="field">
+              <label for="fr-tlf">Telefonnummer <span class="req">*</span></label>
+              <div class="inp"><span class="flag">&#127475;&#127476;</span><input type="tel" id="fr-tlf" name="phone" placeholder="Telefonnummer" autocomplete="tel" required></div>
+            </div>
+            <div class="field">
+              <label for="fr-epost">E-post <span class="req">*</span></label>
+              <div class="inp"><input type="email" id="fr-epost" name="email" placeholder="E-post" autocomplete="email" required></div>
+            </div>
+            <button type="submit" class="cta" id="leadBtn"><span class="t">Siste sjanse!<span class="arw"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><span class="sub">Tilbudet gjelder &eacute;n gang per kunde</span></button>
+          </form>
+          <span class="fine">Vi deler aldri opplysningene dine med andre.</span>
         </div>
       </div>
     </div>
@@ -615,32 +635,47 @@ if(overlay){
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('show'))closePopup();});
 }
 
-/* ===== Lead-event ved submit i GHL-iframen =====
-   GHL-skjemaet lever i iframen og viser inline-takk der (ingen redirect).
-   Verifisert empirisk 17.08.2026 (CDP-test, se docs/froyd-lp-2026-08.md):
-   ved vellykket submit poster widgeten ['set-sticky-contacts','_ud','{...
-   customer_id...}'] til parent — det er submit-signalet. fbq Lead fyres ÉN
-   gang per nettleser (localStorage-guard; tilbudet gjelder én gang per kunde). */
-(function(){
-  var fired=false;
-  try{fired=!!localStorage.getItem('froyd_lead_fired');}catch(e){}
-  function fireLead(){
-    if(fired)return; fired=true;
-    try{localStorage.setItem('froyd_lead_fired','1');sessionStorage.setItem('froyd_lead_done','1');}catch(e){}
-    if(window.fbq)fbq('track','Lead');
-  }
-  window.addEventListener('message',function(ev){
-    if(typeof ev.origin==='string' && ev.origin.indexOf('leadconnectorhq.com')===-1 && ev.origin.indexOf('msgsndr.com')===-1)return;
-    var d=ev.data;
-    try{
-      if(Array.isArray(d) && d[0]==='set-sticky-contacts'){
-        var payload=JSON.stringify(d.slice(1));
-        if(/customer_id|"id"/.test(payload)) fireLead();
-      }
-    }catch(e){}
-  });
-})();
+/* ===== Lead submit → Make-hook «Frøyd LP leads» (3259732) =====
+   Samme sluk som GHL-workflowen postet til → identisk rad i «Frøyd x Arcads»-
+   sheetet (payload-nøkler: full_name/phone/email/treatment/time som før,
+   + kilde/side_url/fbclid ekstra). urlencoded + sendBeacon (Make parser
+   feltene natively; JSON via no-cors blir tekst-blob → tomme felter).
+   Meta-pixel Lead fyres på takkesiden (/takk.html), ikke her. */
+var MAKE_WEBHOOK_URL='https://hook.eu1.make.com/isccy3sl7gaytk24clsuqyr1q3iwe3cg';
+var TAKK_URL='takk.html';
+
+function froydNormPhone(p){
+  var d=(p||'').replace(/[^0-9+]/g,'');
+  if(/^[49][0-9]{7}$/.test(d)) return '+47'+d;
+  if(/^0047/.test(d)) return '+47'+d.slice(4);
+  return d;
+}
+document.getElementById('leadForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  var f=e.target;
+  if(!f.full_name.value.trim()||!f.phone.value.trim()||!f.email.value.trim()){f.reportValidity();return;}
+  var btn=document.getElementById('leadBtn');btn.disabled=true;btn.style.opacity='.7';
+  var params=new URLSearchParams(window.location.search);
+  var data={
+    full_name: f.full_name.value.trim(),
+    phone:     froydNormPhone(f.phone.value),
+    email:     f.email.value.trim(),
+    treatment: '',
+    time:      '',
+    kilde:     'froyd.arcads.no',
+    side_url:  window.location.href,
+    fbclid:    params.get('fbclid')||''
+  };
+  var body=new URLSearchParams();
+  for(var k in data){ if(data.hasOwnProperty(k)) body.append(k, data[k]==null?'':data[k]); }
+  try{localStorage.setItem('froyd_lead_backup', JSON.stringify(data));}catch(err){}
+  try{ if(!(navigator.sendBeacon && navigator.sendBeacon(MAKE_WEBHOOK_URL, body)))
+    fetch(MAKE_WEBHOOK_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
+  }catch(err){ try{fetch(MAKE_WEBHOOK_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});}catch(e2){} }
+  try{sessionStorage.setItem('froyd_lead_done','1');}catch(err){}
+  var msg=document.getElementById('formMsg');if(msg)msg.style.display='block';
+  setTimeout(function(){window.location.href=TAKK_URL;},500);
+});
 </script>
-<script src="https://link.msgsndr.com/js/form_embed.js"></script>
 </body>
 </html>
